@@ -88,6 +88,8 @@ app.post('/api/login', async (req, res) => {
 
         const verificationCode = crypto.randomBytes(3).toString('hex');
         verificationCodes[user.id] = verificationCode;
+        console.log('Generated verification code:', verificationCode); // Debug log
+        console.log('Stored verification code for user ID:', user.id, verificationCodes[user.id]); // Debug log
 
         const mailOptions = {
             from: 'pftdemo2024@outlook.com',
@@ -101,7 +103,7 @@ app.post('/api/login', async (req, res) => {
                 console.error('Error sending email:', error);
                 return res.status(500).json({ message: 'Error sending email' });
             }
-            res.status(200).json({ message: 'Verification code sent', userId: user.id });
+            res.status(200).json({ message: 'Verification code sent', userId: user.id, email: user.email });
         });
     } catch (error) {
         console.error('Login error:', error);
@@ -111,17 +113,20 @@ app.post('/api/login', async (req, res) => {
 
 app.post('/api/verify', async (req, res) => {
     const { userId, verificationCode } = req.body;
+    console.log('Received verification code:', verificationCode); // Debug log
+    console.log('Stored verification code:', verificationCodes[userId]); // Debug log
 
     if (verificationCodes[userId] && verificationCodes[userId] === verificationCode) {
         delete verificationCodes[userId];
         const user = await User.findByPk(userId);
-        //const token = jwt.sign({ userId }, jwtSecret, { expiresIn: '1h' });
+        //const user = await User.findOne({ where: { id: userId } });
         const token = jwt.sign({ userId: user.id, username: user.username }, jwtSecret, { expiresIn: '1h' });
-//localStorage.setItem('token', token);
-
-        res.status(200).json({ token });
+        //localStorage.setItem('token', token);
+        //const token = jwt.sign({ userId }, jwtSecret, { expiresIn: '1h' });
+        return res.status(200).json({ token });
     } else {
-        res.status(401).json({ message: 'Invalid verification code' });
+        console.log('Invalid verification code');
+        return res.status(401).json({ message: 'Invalid verification code' });
     }
 });
 
